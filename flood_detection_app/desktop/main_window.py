@@ -835,14 +835,25 @@ class MainWindow(QMainWindow):
         self.clear_result()
         self.current_image = None
         self.current_image_path = None
-        self.analyze_btn.setEnabled(False)
-        self.download_btn.setEnabled(False)
         
         # 清除文件列表
         for i in reversed(range(self.file_list_widget.layout().count())):
             child = self.file_list_widget.layout().itemAt(i).widget()
             if child:
                 child.setParent(None)
+        
+        # 清除分析缓存
+        if hasattr(self, 'analysis_cache'):
+            self.analysis_cache.clear()
+        
+        # 清除图像显示
+        if hasattr(self, 'original_image_panel'):
+            self.original_image_panel.clear_image()
+        if hasattr(self, 'result_image_panel'):
+            self.result_image_panel.clear_image()
+        
+        # 更新UI状态
+        self.update_ui_state()
     
     def add_file_to_list(self, file_path: str):
         """添加文件到列表"""
@@ -1014,6 +1025,9 @@ class MainWindow(QMainWindow):
                     font-size: 9px;
                 }
             """)
+        
+        # 更新UI状态，确保Clear按钮等控件状态正确
+        self.update_ui_state()
     
     def remove_file_item(self, file_item, file_path):
         """删除文件项"""
@@ -1030,6 +1044,9 @@ class MainWindow(QMainWindow):
             
             # 更新状态栏
             self.status_bar.showMessage(f"已删除文件: {os.path.basename(file_path)}", 3000)
+            
+            # 更新UI状态
+            self.update_ui_state()
             
         except Exception as e:
             QMessageBox.warning(self, "删除失败", f"无法删除文件: {str(e)}")
@@ -1175,7 +1192,13 @@ class MainWindow(QMainWindow):
             
             # 更新清除按钮状态
             if hasattr(self, 'clear_btn'):
-                self.clear_btn.setEnabled(self.current_image is not None or self.analysis_result is not None)
+                # Clear按钮在有当前图像、分析结果或上传文件时启用
+                has_uploaded_files = len(self.get_uploaded_file_paths()) > 0
+                self.clear_btn.setEnabled(
+                    self.current_image is not None or 
+                    self.analysis_result is not None or 
+                    has_uploaded_files
+                )
             
             # 更新状态栏
             if hasattr(self, 'status_bar'):

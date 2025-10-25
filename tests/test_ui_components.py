@@ -14,6 +14,7 @@ from PyQt6.QtTest import QTest
 
 from flood_detection_app.desktop.image_display_widget import ImageDisplayPanel
 from flood_detection_app.desktop.statistics_widget import StatisticsWidget, CompactStatisticsWidget
+from flood_detection_app.desktop.main_window import MainWindow
 from flood_detection_app.core.data_models import Statistics, FloodLevel
 
 
@@ -366,3 +367,176 @@ class TestErrorHandlingInUI:
         
         # 验证清理完成（主要是确保不会内存泄漏）
         # 这个测试主要是确保代码执行不出错
+
+
+class TestMainWindowClearButton:
+    """主窗口Clear按钮测试"""
+    
+    @pytest.fixture
+    def main_window(self, qapp):
+        """创建主窗口实例"""
+        with patch('flood_detection_app.desktop.main_window.ModelManager'):
+            window = MainWindow()
+            yield window
+            window.close()
+    
+    def test_clear_button_initial_state(self, main_window):
+        """测试Clear按钮初始状态"""
+        # 初始状态下，Clear按钮应该是禁用的
+        assert not main_window.clear_btn.isEnabled()
+    
+    def test_clear_button_enabled_with_uploaded_files(self, main_window, tmp_path):
+        """测试上传文件后Clear按钮启用"""
+        # 创建临时测试图片文件
+        test_image_path = tmp_path / "test_image.jpg"
+        test_image = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        
+        # 模拟文件上传
+        main_window.add_file_to_list(str(test_image_path))
+        
+        # 模拟上传完成，触发UI状态更新
+        main_window.update_ui_state()
+        
+        # Clear按钮应该启用
+        assert main_window.clear_btn.isEnabled()
+    
+    def test_clear_button_enabled_with_current_image(self, main_window, sample_image):
+        """测试有当前图像时Clear按钮启用"""
+        # 设置当前图像
+        main_window.current_image = sample_image
+        main_window.current_image_path = "test_image.jpg"
+        
+        # 更新UI状态
+        main_window.update_ui_state()
+        
+        # Clear按钮应该启用
+        assert main_window.clear_btn.isEnabled()
+    
+    def test_clear_button_enabled_with_analysis_result(self, main_window, sample_statistics):
+        """测试有分析结果时Clear按钮启用"""
+        # 设置分析结果
+        main_window.analysis_result = {
+            'statistics': sample_statistics,
+            'result_image': np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+        }
+        
+        # 更新UI状态
+        main_window.update_ui_state()
+        
+        # Clear按钮应该启用
+        assert main_window.clear_btn.isEnabled()
+    
+    def test_clear_all_functionality(self, main_window, sample_image, tmp_path):
+        """测试Clear按钮的清除功能"""
+        # 准备测试数据
+        test_image_path = tmp_path / "test_image.jpg"
+        
+        # 设置当前图像
+        main_window.current_image = sample_image
+        main_window.current_image_path = str(test_image_path)
+        
+        # 添加文件到列表
+        main_window.add_file_to_list(str(test_image_path))
+        
+        # 设置分析结果
+        main_window.analysis_result = {
+            'statistics': Statistics(1, 1, 0, 0, 10.0, 1.0),
+            'result_image': sample_image
+        }
+        
+        # 更新UI状态
+        main_window.update_ui_state()
+        
+        # 验证Clear按钮启用
+        assert main_window.clear_btn.isEnabled()
+        
+        # 点击Clear按钮
+        main_window.clear_all()
+        
+        # 验证清除结果
+        assert main_window.current_image is None
+        assert main_window.current_image_path is None
+        assert main_window.analysis_result is None
+        
+        # 验证文件列表被清除
+        uploaded_files = main_window.get_uploaded_file_paths()
+        assert len(uploaded_files) == 0
+        
+        # 验证Clear按钮被禁用
+        assert not main_window.clear_btn.isEnabled()
+    
+    def test_clear_button_state_after_file_removal(self, main_window, tmp_path):
+        """测试删除文件后Clear按钮状态"""
+        # 创建两个测试文件
+        test_image1 = tmp_path / "test_image1.jpg"
+        test_image2 = tmp_path / "test_image2.jpg"
+        
+        # 添加文件到列表
+        main_window.add_file_to_list(str(test_image1))
+        main_window.add_file_to_list(str(test_image2))
+        
+        # 更新UI状态
+        main_window.update_ui_state()
+        
+        # Clear按钮应该启用
+        assert main_window.clear_btn.isEnabled()
+        
+        # 模拟删除一个文件（通过清除文件列表）
+        layout = main_window.file_list_widget.layout()
+        for i in reversed(range(layout.count())):
+            child = layout.itemAt(i).widget()
+            if child and hasattr(child, 'file_path'):
+                child.setParent(None)
+                break
+        
+        # 更新UI状态
+        main_window.update_ui_state()
+        
+        # 如果还有文件，Clear按钮应该仍然启用
+        uploaded_files = main_window.get_uploaded_file_paths()
+        if len(uploaded_files) > 0:
+            assert main_window.clear_btn.isEnabled()
+        else:
+            assert not main_window.clear_btn.isEnabled()
+    
+    def test_clear_button_click_signal(self, main_window):
+        """测试Clear按钮点击信号连接"""
+        # 验证Clear按钮的点击信号正确连接到clear_all方法
+        # 这个测试主要验证信号连接的正确性
+        
+        # 使用Mock来验证方法调用
+        with patch.object(main_window, 'clear_all') as mock_clear_all:
+            # 启用Clear按钮
+            main_window.current_image = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+            main_window.update_ui_state()
+            
+            # 模拟点击Clear按钮
+            main_window.clear_btn.click()
+            
+            # 验证clear_all方法被调用
+            mock_clear_all.assert_called_once()
+    
+    def test_clear_button_multiple_operations(self, main_window, sample_image, tmp_path):
+        """测试Clear按钮的多次操作"""
+        test_image_path = tmp_path / "test_image.jpg"
+        
+        # 第一次操作：添加文件和图像
+        main_window.add_file_to_list(str(test_image_path))
+        main_window.current_image = sample_image
+        main_window.update_ui_state()
+        
+        assert main_window.clear_btn.isEnabled()
+        
+        # 清除
+        main_window.clear_all()
+        assert not main_window.clear_btn.isEnabled()
+        
+        # 第二次操作：重新添加内容
+        main_window.add_file_to_list(str(test_image_path))
+        main_window.update_ui_state()
+        
+        assert main_window.clear_btn.isEnabled()
+        
+        # 再次清除
+        main_window.clear_all()
+        assert not main_window.clear_btn.isEnabled()
