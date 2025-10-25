@@ -1,0 +1,39 @@
+# 核心深度学习依赖
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0  # YOLOv11支持
+
+# 图像处理
+opencv-python>=4.8.0
+Pillow>=9.5.0
+numpy>=1.24.0
+
+# 桌面GUI
+PyQt6>=6.5.0
+
+# Web框架 (后端)
+fastapi>=0.100.0
+uvicorn>=0.22.0
+python-multipart>=0.0.6
+aiofiles>=23.0.0
+
+# Web前端构建工具 (如果需要本地构建)
+# 注：前端主要使用React + TypeScript，通过npm管理
+
+# 数据处理
+pandas>=2.0.0
+scikit-image>=0.20.0
+
+# 配置和工具
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
+
+# 开发和测试工具
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+
+# 部署相关
+gunicorn>=21.0.0

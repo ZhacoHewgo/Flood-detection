@@ -1,0 +1,6 @@
+# 模型文件目录
+# 请将以下模型文件放置在此目录：
+# - yolov11_car_detection.pt
+# - rtdetr_car_detection.pt  
+# - deeplabv3_water.pt
+# - yolov11_seg_water.pt

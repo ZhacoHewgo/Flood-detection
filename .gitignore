@@ -1,0 +1,6 @@
+.DS_Store
+/.kiro/
+/.vscode/
+/test_images/
+*.pt
+/models/

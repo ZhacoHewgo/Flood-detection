@@ -1,0 +1,1 @@
+# Integration Tests for Flood Detection Desktop Application
