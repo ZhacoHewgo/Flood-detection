@@ -43,3 +43,27 @@ export interface HealthStatus {
   models_loaded: boolean;
   version: string;
 }
+
+export interface BatchAnalysisResult {
+  filename: string;
+  success: boolean;
+  result: AnalysisResult | null;
+  error: string | null;
+}
+
+export interface PerformanceInfo {
+  models_loaded: boolean;
+  cache_size: number;
+  executor_threads: number;
+  memory_usage?: {
+    total_memory_mb: number;
+    used_memory_mb: number;
+    available_memory_mb: number;
+    memory_usage_percent: number;
+  };
+  model_info?: {
+    vehicle_model_loaded: boolean;
+    water_model_loaded: boolean;
+    model_memory_mb: number;
+  };
+}

@@ -79,6 +79,42 @@ export const apiService = {
     return response.data;
   },
 
+  // 批量分析图像
+  async batchAnalyzeImages(
+    imageFiles: File[],
+    vehicleModel: string,
+    waterModel: string
+  ): Promise<any> {
+    const formData = new FormData();
+    
+    imageFiles.forEach(file => {
+      formData.append('files', file);
+    });
+    formData.append('vehicle_model', vehicleModel);
+    formData.append('water_model', waterModel);
+
+    const response = await apiClient.post('/api/batch-analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 300000, // 5分钟超时，批量分析需要更长时间
+    });
+
+    return response.data;
+  },
+
+  // 获取性能信息
+  async getPerformanceInfo(): Promise<any> {
+    const response = await apiClient.get('/api/performance');
+    return response.data;
+  },
+
+  // 优化性能
+  async optimizePerformance(): Promise<any> {
+    const response = await apiClient.post('/api/optimize');
+    return response.data;
+  },
+
   // 测试连接
   async testConnection(): Promise<boolean> {
     try {

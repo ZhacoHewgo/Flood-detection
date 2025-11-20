@@ -4,3 +4,8 @@
 /test_images/
 *.pt
 /models/
+/dist/
+/flood_detection_app/web/
+/__pycache__/
+*.html
+/start_web_complete.py

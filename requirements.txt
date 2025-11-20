@@ -13,9 +13,15 @@ PyQt6>=6.5.0
 
 # Web框架 (后端)
 fastapi>=0.100.0
-uvicorn>=0.22.0
+uvicorn[standard]>=0.22.0
 python-multipart>=0.0.6
 aiofiles>=23.0.0
+jinja2>=3.1.0  # FastAPI模板支持
+python-jose[cryptography]>=3.3.0  # JWT支持（如果需要认证）
+
+# 系统监控和性能
+psutil>=5.9.0  # 系统资源监控
+requests>=2.31.0  # HTTP客户端
 
 # Web前端构建工具 (如果需要本地构建)
 # 注：前端主要使用React + TypeScript，通过npm管理

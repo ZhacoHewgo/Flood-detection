@@ -26,6 +26,114 @@ class ClickableFrame(QFrame):
             self.clicked.emit()
         super().mousePressEvent(event)
 
+
+class DragDropFrame(QFrame):
+    """支持拖拽上传的Frame"""
+    files_dropped = pyqtSignal(list)  # 发送拖拽的文件路径列表
+    clicked = pyqtSignal()  # 点击信号
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.drag_active = False
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+    
+    def dragEnterEvent(self, event):
+        """拖拽进入事件"""
+        if event.mimeData().hasUrls():
+            # 检查是否包含图片文件
+            urls = event.mimeData().urls()
+            valid_files = []
+            
+            for url in urls:
+                if url.isLocalFile():
+                    file_path = url.toLocalFile()
+                    # 检查文件扩展名
+                    if self.is_image_file(file_path):
+                        valid_files.append(file_path)
+            
+            if valid_files:
+                event.acceptProposedAction()
+                self.drag_active = True
+                self.update_drag_style(True)
+                return
+        
+        event.ignore()
+    
+    def dragMoveEvent(self, event):
+        """拖拽移动事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+    
+    def dragLeaveEvent(self, event):
+        """拖拽离开事件"""
+        self.drag_active = False
+        self.update_drag_style(False)
+        super().dragLeaveEvent(event)
+    
+    def dropEvent(self, event):
+        """拖拽放下事件"""
+        self.drag_active = False
+        self.update_drag_style(False)
+        
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            file_paths = []
+            
+            for url in urls:
+                if url.isLocalFile():
+                    file_path = url.toLocalFile()
+                    if self.is_image_file(file_path):
+                        file_paths.append(file_path)
+            
+            if file_paths:
+                self.files_dropped.emit(file_paths)
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+        else:
+            event.ignore()
+    
+    def is_image_file(self, file_path):
+        """检查是否为图片文件"""
+        import os
+        valid_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif', '.gif', '.webp'}
+        _, ext = os.path.splitext(file_path.lower())
+        return ext in valid_extensions
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        """鼠标点击事件"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+    
+    def update_drag_style(self, is_dragging):
+        """更新拖拽时的样式"""
+        if is_dragging:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #1e2329;
+                    border: 2px dashed #4fc3f7;
+                    border-radius: 10px;
+                    cursor: pointer;
+                }
+            """)
+        else:
+            self.setStyleSheet("""
+                QFrame {
+                    background-color: #1a1d23;
+                    border: 2px dashed #4a5568;
+                    border-radius: 10px;
+                    cursor: pointer;
+                }
+                QFrame:hover {
+                    border-color: #4fc3f7;
+                    background-color: #1e2329;
+                }
+            """)
+
 # 导入桌面组件
 from .image_display_widget import ImageDisplayPanel
 from .file_operations import FileOperations
@@ -191,12 +299,14 @@ class MainWindow(QMainWindow):
     
     def setup_upload_area(self, parent_layout):
         """设置上传区域"""
-        upload_frame = QFrame()
+        # 创建支持拖拽的上传框
+        upload_frame = DragDropFrame()
         upload_frame.setStyleSheet("""
             QFrame {
                 background-color: #1a1d23;
                 border: 2px dashed #4a5568;
                 border-radius: 10px;
+                cursor: pointer;
             }
             QFrame:hover {
                 border-color: #4fc3f7;
@@ -206,13 +316,18 @@ class MainWindow(QMainWindow):
         upload_frame.setMinimumHeight(180)
         upload_frame.setMaximumHeight(220)
         
+        # 连接拖拽信号
+        upload_frame.files_dropped.connect(self.handle_dropped_files)
+        # 连接点击信号
+        upload_frame.clicked.connect(self.select_multiple_images)
+        
         upload_layout = QVBoxLayout(upload_frame)
         upload_layout.setContentsMargins(15, 15, 15, 15)
         upload_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         upload_layout.setSpacing(10)
         
         # 拖拽图标
-        drag_icon = QLabel("📁")
+        drag_icon = QLabel("📷")
         drag_icon.setStyleSheet("""
             QLabel {
                 font-size: 40px;
@@ -1353,6 +1468,15 @@ class MainWindow(QMainWindow):
         )
         
         if file_paths:
+            self.load_multiple_images(file_paths)
+    
+    def handle_dropped_files(self, file_paths: list):
+        """处理拖拽的文件"""
+        if len(file_paths) == 1:
+            # 单个文件，直接加载并设置为当前图像
+            self.load_image(file_paths[0])
+        else:
+            # 多个文件，批量加载
             self.load_multiple_images(file_paths)
     
     def load_multiple_images(self, file_paths: list):
